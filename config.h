@@ -1,4 +1,4 @@
-/* Default settings, which can be overriden by running the corresponding 
+/* Default settings, which can be overriden by running the corresponding
  * command line arguments. */
 
 static int topbar = 1; /* -b option; if 0, dmenu appears at bottom. */
@@ -12,9 +12,9 @@ static const char *prompt = NULL; /* -p option; prompt to the left of input fiel
 
 /* Color schemes. [Scheme] = { fg, bg }. */
 static const char *colors[SchemeLast][2] = {
-    [SchemeNorm] = { "#bbbbbb", "#222222" },
-    [SchemeSel]  = { "#eeeeee", "#005577" },
-    [SchemeOut]  = { "#000000", "#00ffff" },
+    [SchemeNorm] = { "#bbbbbb", "#000000" },
+	[SchemeSel]  = { "#0f101a", "#f1ffff" },
+	[SchemeOut]  = { "#000000", "#00ffff" },
 };
 
 /* -l option; if nonzero, dmenu uses vertical list with given number of lines. */
