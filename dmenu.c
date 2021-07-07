@@ -54,8 +54,9 @@ static Clr *scheme[SchemeLast];
 
 #include "config.h"
 
-static int (*fstrncmp)(const char *, const char *, size_t) = strncmp;
-static char *(*fstrstr)(const char *, const char *) = strstr;
+static char *cistrstr(const char *s, const char *sub);
+static int (*fstrncmp)(const char *, const char *, size_t) = strncasecmp;
+static char *(*fstrstr)(const char *, const char *) = cistrstr;
 
 static void appenditem(struct item *item, struct item **list, struct item **last) {
     if (*last) (*last)->right = item;
@@ -95,7 +96,7 @@ static char *cistrstr(const char *s, const char *sub) {
 
     for (len = strlen(sub); *s; s++)
 	if (!strncasecmp(s, sub, len)) return (char *)s;
-	
+
     return NULL;
 }
 
@@ -143,7 +144,7 @@ static void drawmenu(void) {
             drw_setscheme(drw, scheme[SchemeNorm]);
 	    drw_text(drw, x, 0, w, bh, lrpad / 2, "<", 0);
 	}
-	    
+
         x += w;
 	for (item = curr; item != next; item = item->right)
 	    x = drawitem(item, x, 0, MIN(TEXTW(item->text), mw - x - TEXTW(">")));
@@ -178,10 +179,10 @@ static void grabkeyboard(void) {
     int i;
 
     if (embed) return;
-    
+
     /* try to grab keyboard, we may have to wait for another process to ungrab */
     for (i = 0; i < 1000; i++) {
-	if (XGrabKeyboard(dpy, DefaultRootWindow(dpy), True, GrabModeAsync, GrabModeAsync, 
+	if (XGrabKeyboard(dpy, DefaultRootWindow(dpy), True, GrabModeAsync, GrabModeAsync,
             CurrentTime) == GrabSuccess) return;
 	nanosleep(&ts, NULL);
     }
@@ -214,7 +215,7 @@ static void match(void) {
 
 	if (i != tokc) /* not all tokens match */
 	    continue;
-		
+
         /* exact matches go first, then prefixes, then substrings */
 	if (!tokc || !fstrncmp(text, item->text, textsize)) appenditem(item, &matches, &matchend);
 	else if (!fstrncmp(tokv[0], item->text, len)) appenditem(item, &lprefix, &prefixend);
@@ -247,7 +248,7 @@ static void insert(const char *str, ssize_t n) {
     /* move existing text out of the way, insert new text, and update cursor */
     memmove(&text[cursor + n], &text[cursor], sizeof text - cursor - MAX(n, 0));
     if (n > 0) memcpy(&text[cursor], str, n);
-    
+
     cursor += n;
     match();
 }
@@ -416,7 +417,7 @@ insert:
 		curr = prev;
 		calcoffsets();
 	    }
-		
+
             break;
 	case XK_Next:
 	    if (!next) return;
@@ -504,7 +505,7 @@ static void readstdin(void) {
 	    imax = i;
 	}
     }
-    
+
     if (items) items[i].text = NULL;
     inputw = items ? TEXTW(items[imax].text) : 0;
     lines = MIN(lines, i);
@@ -635,7 +636,7 @@ static void setup(void) {
 }
 
 static void usage(void) {
-    fputs("usage: dmenu [-bfiv] [-l lines] [-p prompt] [-fn font] [-m monitor]\n"
+    fputs("usage: dmenu [-bfsv] [-l lines] [-p prompt] [-fn font] [-m monitor]\n"
 	  "             [-nb color] [-nf color] [-sb color] [-sf color] [-w windowid]\n", stderr);
     exit(1);
 }
@@ -653,9 +654,9 @@ int main(int argc, char *argv[]) {
 	    topbar = 0;
 	else if (!strcmp(argv[i], "-f"))   /* grabs keyboard before reading stdin */
 	    fast = 1;
-	else if (!strcmp(argv[i], "-i")) { /* case-insensitive item matching */
-	    fstrncmp = strncasecmp;
-	    fstrstr = cistrstr;
+	else if (!strcmp(argv[i], "-s")) { /* case-sensitive item matching */
+	    fstrncmp = strncmp;
+	    fstrstr = strstr;
 	} else if (i + 1 == argc)
 	    usage();
 	/* these options take one argument */
