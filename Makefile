@@ -1,5 +1,4 @@
 # dmenu - dynamic menu
-# See LICENSE file for copyright and license details.
 
 include config.mk
 
