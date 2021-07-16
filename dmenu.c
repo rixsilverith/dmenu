@@ -23,6 +23,8 @@
                               && MAX(0, MIN((y)+(h),(r).y_org+(r).height) - MAX((y),(r).y_org)))
 #define LENGTH(X)             (sizeof X / sizeof X[0])
 #define TEXTW(X)              (drw_fontset_getwidth(drw, (X)) + lrpad)
+#define NUMBERSMAXDIGITS      100
+#define NUMBERSBUFSIZE        (NUMBERSMAXDIGITS * 2) + 1
 
 /* enums */
 enum { SchemeNorm, SchemeSel, SchemeOut, SchemeLast }; /* color schemes */
@@ -33,6 +35,7 @@ struct item {
     int out;
 };
 
+static char numbers[NUMBERSBUFSIZE] = "";
 static char text[BUFSIZ] = "";
 static char *embed;
 static int bh, mw, mh;
@@ -100,6 +103,19 @@ static char *cistrstr(const char *s, const char *sub) {
     return NULL;
 }
 
+static void recalculatenumbers() {
+    unsigned int numer = 0, denom = 0;
+    struct item *item;
+
+    if (matchend) {
+        numer++;
+        for (item = matchend; item && item->left; item = item->left) numer++;
+    }
+
+    for (item = items; item && item->text; item++) denom++;
+    snprintf(numbers, NUMBERSBUFSIZE, "%d/%d", numer, denom);
+}
+
 static int drawitem(struct item *item, int x, int y, int w) {
     if (item == sel) drw_setscheme(drw, scheme[SchemeSel]);
     else if (item->out) drw_setscheme(drw, scheme[SchemeOut]);
@@ -132,6 +148,8 @@ static void drawmenu(void) {
 	drw_rect(drw, x + curpos, 2 + (bh - fh) / 2, 2, fh - 4, 1, 0);
     }
 
+    if (show_numbers) recalculatenumbers();
+
     if (lines > 0) {
 	/* draw vertical list */
 	for (item = curr; item != next; item = item->right)
@@ -147,13 +165,18 @@ static void drawmenu(void) {
 
         x += w;
 	for (item = curr; item != next; item = item->right)
-	    x = drawitem(item, x, 0, MIN(TEXTW(item->text), mw - x - TEXTW(">")));
+            x = drawitem(item, x, 0, MIN(TEXTW(item->text), mw - x - TEXTW(">") - TEXTW(numbers) * show_numbers));
 
 	if (next) {
 	    w = TEXTW(">");
 	    drw_setscheme(drw, scheme[SchemeNorm]);
-	    drw_text(drw, mw - w, 0, w, bh, lrpad / 2, ">", 0);
+	    drw_text(drw, mw - w - TEXTW(numbers) * show_numbers, 0, w, bh, lrpad / 2, ">", 0);
 	}
+    }
+
+    if (show_numbers) {
+        drw_setscheme(drw, scheme[SchemeSel]);
+        drw_text(drw, mw - TEXTW(numbers), 0, TEXTW(numbers), bh, lrpad / 2, numbers, 0);
     }
 
     drw_map(drw, win, 0, 0, mw, mh);
@@ -750,7 +773,7 @@ static void setup(void) {
 }
 
 static void usage(void) {
-    fputs("usage: dmenu [-bfsv] [-l lines] [-h height] [-p prompt] [-fn font] [-m monitor]\n"
+    fputs("usage: dmenu [-bfsvn] [-l lines] [-h height] [-p prompt] [-fn font] [-m monitor]\n"
 	  "             [-nb color] [-nf color] [-sb color] [-sf color] [-w windowid]\n", stderr);
     exit(1);
 }
@@ -771,7 +794,10 @@ int main(int argc, char *argv[]) {
 	else if (!strcmp(argv[i], "-s")) { /* case-sensitive item matching */
 	    fstrncmp = strncmp;
 	    fstrstr = strstr;
-	} else if (i + 1 == argc)
+	}
+        else if (!strcmp(argv[i], "-n")) /* show number of matched and total items */
+            show_numbers = 1;
+        else if (i + 1 == argc)
 	    usage();
 	/* these options take one argument */
 	else if (!strcmp(argv[i], "-l"))   /* number of lines in vertical list */

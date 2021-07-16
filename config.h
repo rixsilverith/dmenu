@@ -3,6 +3,10 @@
 
 static int topbar = 1; /* -b option; if 0, dmenu appears at bottom. */
 
+/* -n option; if 1, the number of matched and total items
+ * will appear at the top right corner. */
+static int show_numbers = 0;
+
 /* -fn option overrides fonts[0]; default X11 font or font set. */
 static const char *fonts[] = {
     "SF Pro Text:style=Medium:size=10",
